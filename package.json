@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon --exec ts-node src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start:listener": "node dist/index.js",
+    "start:sender": "node dist/sender.js"
   },
   "devDependencies": {
     "@types/node": "^20.3.1",
