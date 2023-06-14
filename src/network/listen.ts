@@ -1,6 +1,6 @@
 import { parentPort } from 'worker_threads';
 import { createServer, Socket } from 'net';
-import { BYE_MESSAGE, HI_MESSAGE, PORT } from '../util/const';
+import { BYE_MESSAGE, HI_MESSAGE, HI_MESSAGE_BUSY, PORT } from '../util/const';
 
 export async function listen(): Promise<void> {
   const counter = new Counter();
@@ -11,10 +11,12 @@ export async function listen(): Promise<void> {
 
       socket.on('data', (data) => {
         const message = data.toString();
-        if (message === HI_MESSAGE) {
+        if (message === HI_MESSAGE || message === HI_MESSAGE_BUSY) {
           counter.start();
+          parentPort?.postMessage(message);
         } else if (message === BYE_MESSAGE) {
           counter.finish();
+          parentPort?.postMessage(BYE_MESSAGE);
         } else {
           counter.track(message);
         }
