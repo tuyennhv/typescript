@@ -2,9 +2,11 @@ import { parentPort } from 'worker_threads';
 import { createServer, Socket } from 'net';
 import { BYE_MESSAGE, HI_MESSAGE, HI_MESSAGE_BUSY, HI_MESSAGES, PORT } from '../util/const';
 
+type TestStatus = Status[];
+
 export async function listen(): Promise<void> {
-  const counter = new Counter();
-  const statuses: Status[][] = [];
+  let counter: Counter;
+  let testStatuses: TestStatus[] = [];
 
   return new Promise<void>((resolve, reject) => {
     const server = createServer((socket: Socket) => {
@@ -13,10 +15,11 @@ export async function listen(): Promise<void> {
       socket.on('data', (data) => {
         const message = data.toString();
         if (message === HI_MESSAGE || message === HI_MESSAGE_BUSY) {
+          counter = new Counter();
           counter.start();
           parentPort?.postMessage(message);
         } else if (message === BYE_MESSAGE) {
-          statuses.push(counter.finish());
+          testStatuses.push(counter.finish());
           parentPort?.postMessage(BYE_MESSAGE);
         } else {
           counter.track(message);
@@ -25,8 +28,12 @@ export async function listen(): Promise<void> {
 
       socket.on('end', () => {
           console.log('Client disconnected');
+          if (testStatuses.length === 0) {
+            return;
+          }
+
           const tabularData: Record<string, Record<number, number>> = {};
-          for (const [index, status] of statuses.entries()) {
+          for (const [index, status] of testStatuses.entries()) {
             const rowData: Record<number, number> = {};
             for (const {delta, total} of status) {
               rowData[delta] = total;
@@ -35,6 +42,7 @@ export async function listen(): Promise<void> {
             tabularData[HI_MESSAGES[index]] = rowData;
           }
           console.table(tabularData);
+          testStatuses = [];
       });
     });
 

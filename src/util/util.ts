@@ -10,5 +10,5 @@ export function heavyOperationLastingOneSecond(): void {
   while (Date.now() - start < 1000) {
     digest(crypto.randomBytes(32));
   }
-  console.log("Done performiang heavy operation in", Date.now() - start);
+  console.log("Done performing heavy operation in", Date.now() - start);
 }

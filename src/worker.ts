@@ -4,6 +4,6 @@ import { PORT } from './util/const';
 
 listen().then(() => {
   if (parentPort) {
-      parentPort.postMessage(`Server started on port ${PORT}`);
+      parentPort.postMessage(`Server started on worker thread port ${PORT}`);
   }
 });
