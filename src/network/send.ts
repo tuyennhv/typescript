@@ -14,9 +14,10 @@ export async function send(durationMs = DEFAULT_DURATION_MS): Promise<void> {
 
   while (Date.now() - start < durationMs) {
     client.write(String(Date.now()));
-    await sleep(1);
+    await sleep(10);
   }
 
   await sleep(1000);
   client.write(BYE_MESSAGE);
+  client.end();
 }
