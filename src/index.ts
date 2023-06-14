@@ -11,7 +11,7 @@ worker.on('message', (message) => {
   if (message === HI_MESSAGE_BUSY) {
     interval = setInterval(() => {
       heavyOperationLastingOneSecond();
-    }, 3000);
+    }, 2000);
   } else if (message === BYE_MESSAGE) {
     clearInterval(interval);
     console.log('Stopped Interval');

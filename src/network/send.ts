@@ -14,7 +14,7 @@ export async function send(hiMessage: string, durationMs = DEFAULT_DURATION_MS):
 
   while (Date.now() - start < durationMs) {
     client.write(String(Date.now()));
-    await sleep(10);
+    await sleep(1);
   }
 
   await sleep(1000);

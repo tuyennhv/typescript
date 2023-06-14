@@ -1,9 +1,10 @@
 import { parentPort } from 'worker_threads';
 import { createServer, Socket } from 'net';
-import { BYE_MESSAGE, HI_MESSAGE, HI_MESSAGE_BUSY, PORT } from '../util/const';
+import { BYE_MESSAGE, HI_MESSAGE, HI_MESSAGE_BUSY, HI_MESSAGES, PORT } from '../util/const';
 
 export async function listen(): Promise<void> {
   const counter = new Counter();
+  const statuses: Status[][] = [];
 
   return new Promise<void>((resolve, reject) => {
     const server = createServer((socket: Socket) => {
@@ -15,16 +16,25 @@ export async function listen(): Promise<void> {
           counter.start();
           parentPort?.postMessage(message);
         } else if (message === BYE_MESSAGE) {
-          counter.finish();
+          statuses.push(counter.finish());
           parentPort?.postMessage(BYE_MESSAGE);
         } else {
           counter.track(message);
         }
-          // socket.write('Data received');
       });
 
       socket.on('end', () => {
           console.log('Client disconnected');
+          const tabularData: Record<string, Record<number, number>> = {};
+          for (const [index, status] of statuses.entries()) {
+            const rowData: Record<number, number> = {};
+            for (const {delta, total} of status) {
+              rowData[delta] = total;
+            }
+
+            tabularData[HI_MESSAGES[index]] = rowData;
+          }
+          console.table(tabularData);
       });
     });
 
@@ -39,12 +49,14 @@ export async function listen(): Promise<void> {
   });
 }
 
+type Status = {
+  delta: number;
+  total: number;
+}
 
 class Counter {
-  private totalMessage = 0;
-  private totalOnTimeMessage = 0;
-  private total5msDelayMessage = 0;
   private isStarted = false;
+  private statuses: Status[] = defaultStatuses();
 
   public start(): void {
     this.isStarted = true;
@@ -54,22 +66,31 @@ class Counter {
     const message = parseInt(timestamp);
     const now = Date.now();
     if (this.isStarted) {
-      if (now === message) {
-        this.totalOnTimeMessage++;
+      for (const status of this.statuses) {
+        if (Math.abs(message - now) <= status.delta) {
+          status.total++;
+        }
       }
-      if (Math.abs(message - now) <= 5) {
-        this.total5msDelayMessage++;
-      }
-      this.totalMessage++;
     }
   }
 
-  public finish(): void {
-    console.log(`Total message: ${this.totalMessage}, total on time message: ${this.totalOnTimeMessage}, total 5ms delay message: ${this.total5msDelayMessage}`);
+  public finish(): Status[] {
     this.isStarted = false;
-    this.totalMessage = 0;
-    this.totalOnTimeMessage = 0;
-    this.total5msDelayMessage = 0;
-    this.isStarted = false;
+    const result = this.statuses;
+    this.statuses = defaultStatuses();
+    return result;
   }
+}
+
+function defaultStatuses(): Status[] {
+  return [
+    {delta: 0, total: 0},
+    {delta: 1, total: 0},
+    {delta: 2, total: 0},
+    {delta: 5, total: 0},
+    {delta: 20, total: 0},
+    {delta: 50, total: 0},
+    // assume no message will be received after 1s
+    {delta: 1000, total: 0},
+  ];
 }
